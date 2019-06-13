@@ -192,6 +192,20 @@ return [
     'logo' => false,
 
     /*
+     * Add custom stylesheet files
+     */
+    'styles' => [
+        //'styles/custom.css'
+    ],
+
+    /*
+     *Add custom scripts files
+     */
+    'scripts' => [
+        //'scripts/custom.js'
+    ],
+
+    /*
      * Name for the group of routes which do not have a @group set.
      */
     'default_group' => 'general',
