@@ -96,7 +96,9 @@ class GenerateDocumentation extends Command
 
         $infoText = view('apidoc::partials.info')
             ->with('outputPath', ltrim($outputPath, 'public/'))
-            ->with('showPostmanCollectionButton', $this->shouldGeneratePostmanCollection());
+            ->with('showPostmanCollectionButton', $this->shouldGeneratePostmanCollection())
+            ->with('styles', $this->docConfig->get('styles'))
+            ->with('scripts', $this->docConfig->get('scripts'));
 
         $settings = ['languages' => $this->docConfig->get('example_languages')];
         $parsedRouteOutput = $parsedRoutes->map(function ($routeGroup) use ($settings) {
@@ -203,6 +205,24 @@ class GenerateDocumentation extends Command
                 $logo,
                 $outputPath.DIRECTORY_SEPARATOR.'images'.DIRECTORY_SEPARATOR.'logo.png'
             );
+        }
+
+        if ($styles = $this->docConfig->get('styles')) {
+            foreach ($styles as $style) {
+                copy(
+                    $style,
+                    $outputPath.DIRECTORY_SEPARATOR.'css'.DIRECTORY_SEPARATOR.basename($style)
+                );
+            }
+        }
+
+        if ($scripts = $this->docConfig->get('scripts')) {
+            foreach ($scripts as $script) {
+                copy(
+                    $script,
+                    $outputPath.DIRECTORY_SEPARATOR.'js'.DIRECTORY_SEPARATOR.basename($script)
+                );
+            }
         }
     }
 
