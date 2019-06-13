@@ -224,6 +224,16 @@ return [
     ],
 
     /*
+     * Includes extra sections at the end of the document. To be able to create a new section you must
+     * define a corresponding view for it in the partials/include-sections directory.
+     * Example: sections' => ['errors'] with partials/include-sections/errors.blade.php
+     */
+    'sections' => [
+        //'errors'
+    ],
+
+
+    /*
      * Configure how responses are transformed using @transformer and @transformerCollection
      * Requires league/fractal package: composer require league/fractal
      *

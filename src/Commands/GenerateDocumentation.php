@@ -89,6 +89,7 @@ class GenerateDocumentation extends Command
     private function writeMarkdown($parsedRoutes)
     {
         $outputPath = $this->docConfig->get('output');
+        $outputIncludeFilePath = $outputPath.DIRECTORY_SEPARATOR.'source'.DIRECTORY_SEPARATOR.'includes'.DIRECTORY_SEPARATOR;
         $targetFile = $outputPath.DIRECTORY_SEPARATOR.'source'.DIRECTORY_SEPARATOR.'index.md';
         $compareFile = $outputPath.DIRECTORY_SEPARATOR.'source'.DIRECTORY_SEPARATOR.'.compare.md';
         $prependFile = $outputPath.DIRECTORY_SEPARATOR.'source'.DIRECTORY_SEPARATOR.'prepend.md';
@@ -116,8 +117,10 @@ class GenerateDocumentation extends Command
             });
         });
 
+        $sections = $this->docConfig->get('sections');
         $frontmatter = view('apidoc::partials.frontmatter')
-            ->with('settings', $settings);
+            ->with('settings', $settings)
+            ->with('sections', $sections);
         /*
          * In case the target file already exists, we should check if the documentation was modified
          * and skip the modified parts of the routes.
@@ -168,6 +171,14 @@ class GenerateDocumentation extends Command
 
         if (! is_dir($outputPath)) {
             $documentarian->create($outputPath);
+        }
+
+        // Write output include files
+        foreach ($sections as $section) {
+            if(view()->exists("apidoc::partials.include-sections.$section"))
+                file_put_contents($outputIncludeFilePath."_$section.md", view("apidoc::partials.include-sections.$section"));
+            else
+                file_put_contents($outputIncludeFilePath."_$section.md", view("vendor.apidoc.partials.include-sections.$section"));
         }
 
         // Write output file
