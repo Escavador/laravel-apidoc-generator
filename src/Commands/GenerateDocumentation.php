@@ -115,7 +115,7 @@ class GenerateDocumentation extends Command
             });
         });
 
-        $sections = ['sections' => config('apidoc.sections')];
+        $sections = $this->docConfig->get('sections');
         $frontmatter = view('apidoc::partials.frontmatter')
             ->with('settings', $settings)
             ->with('sections', $sections);
@@ -172,7 +172,7 @@ class GenerateDocumentation extends Command
         }
 
         // Write output include files
-        foreach ($sections['sections'] as $section) {
+        foreach ($sections as $section) {
             if(view()->exists("apidoc::partials.include-sections.$section"))
                 file_put_contents($outputIncludeFilePath."_$section.md", view("apidoc::partials.include-sections.$section"));
             else

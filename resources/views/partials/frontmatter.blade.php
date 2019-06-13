@@ -6,7 +6,7 @@ language_tabs:
 @endforeach
 
 includes:
-@foreach($sections['sections'] as $section)
+@foreach($sections as $section)
 - {{ $section }}
 @endforeach
 
