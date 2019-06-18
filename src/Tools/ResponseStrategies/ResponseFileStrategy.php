@@ -44,13 +44,14 @@ class ResponseFileStrategy
         }
 
         return array_map(function (Tag $responseFileTag) {
-            preg_match('/^(\d{3})?\s?([\S]*[\s]*?)(\{.*\})?$/', $responseFileTag->getContent(), $result);
+            preg_match('/^(\d{3})?\s?([\S]*[\s]*?)(\{.*\})?\s?(.*)?$/', $responseFileTag->getContent(), $result);
             $status = $result[1] ?: 200;
             $content = $result[2] ? file_get_contents(storage_path(trim($result[2])), true) : '{}';
             $json = ! empty($result[3]) ? str_replace("'", '"', $result[3]) : '{}';
             $merged = array_merge(json_decode($content, true), json_decode($json, true));
+            $headers = empty(trim($result[4]))? []: ['comment' => trim($result[4])];
 
-            return new JsonResponse($merged, (int) $status);
+            return new JsonResponse($merged, (int) $status, $headers);
         }, $responseFileTags);
     }
 }

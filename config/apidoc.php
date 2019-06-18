@@ -192,6 +192,20 @@ return [
     'logo' => false,
 
     /*
+     * Add custom stylesheet files
+     */
+    'styles' => [
+        //'styles/custom.css'
+    ],
+
+    /*
+     *Add custom scripts files
+     */
+    'scripts' => [
+        //'scripts/custom.js'
+    ],
+
+    /*
      * Name for the group of routes which do not have a @group set.
      */
     'default_group' => 'general',
@@ -208,6 +222,16 @@ return [
         'bash',
         'javascript',
     ],
+
+    /*
+     * Includes extra sections at the end of the document. To be able to create a new section you must
+     * define a corresponding view for it in the partials/include-sections directory.
+     * Example: sections' => ['errors'] with partials/include-sections/errors.blade.php
+     */
+    'sections' => [
+        //'errors'
+    ],
+
 
     /*
      * Configure how responses are transformed using @transformer and @transformerCollection

@@ -6,6 +6,9 @@ language_tabs:
 @endforeach
 
 includes:
+@foreach($sections as $section)
+- {{ $section }}
+@endforeach
 
 search: true
 

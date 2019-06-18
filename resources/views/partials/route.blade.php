@@ -19,7 +19,7 @@
 @if(in_array('GET',$route['methods']) || (isset($route['showresponse']) && $route['showresponse']))
 @if(is_array($route['response']))
 @foreach($route['response'] as $response)
-> Example response ({{$response['status']}}):
+>@if($response['comment'])<span style="color:gray">//{{$response['comment']}}</span><br/>@endif Example response ({{$response['status']}}):
 
 @if($response['content-type'] != 'application/json')
 ```
@@ -53,6 +53,15 @@ Header Content-Type: {{$response['content-type']}}
 `{{$method}} {{$route['uri']}}`
 
 @endforeach
+@if(count($route['uriParameters']))
+#### URI Parameters
+
+Parameter | Type | Description
+--------- | ------- | ------- | -------
+@foreach($route['uriParameters'] as $attribute => $parameter)
+    {{$attribute}} | {{$parameter['type']}} | {!! $parameter['description'] !!}
+@endforeach
+@endif
 @if(count($route['bodyParameters']))
 #### Body Parameters
 
