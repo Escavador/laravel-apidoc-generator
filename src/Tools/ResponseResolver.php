@@ -50,7 +50,7 @@ class ResponseResolver
 
             if (! is_null($responses)) {
                 return array_map(function (Response $response) {
-                    return ['status' => $response->getStatusCode(), 'content' => $this->getResponseContent($response)];
+                    return ['status' => $response->getStatusCode(), 'content' => $this->getResponseContent($response), 'comment' => $this->getResponseComment($response)];
                 }, $responses);
             }
         }
@@ -76,5 +76,15 @@ class ResponseResolver
     private function getResponseContent($response)
     {
         return $response ? $response->getContent() : '';
+    }
+
+    /**
+     * @param $response
+     *
+     * @return mixed
+     */
+    private function getResponseComment($response)
+    {
+        return $response ? $response->headers->get('comment') : '';
     }
 }
