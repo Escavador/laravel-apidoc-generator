@@ -20,8 +20,8 @@ class ResponseResolver
         ResponseTagStrategy::class,
         TransformerTagsStrategy::class,
         ResponseFileStrategy::class,
-        ResponseCallStrategy::class,
         ResponsePdfFileStrategy::class,
+        ResponseCallStrategy::class,
     ];
 
     /**
