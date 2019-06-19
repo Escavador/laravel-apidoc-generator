@@ -21,6 +21,11 @@
 @foreach($route['response'] as $response)
 >@if($response['comment'])<span style="color:gray">//{{$response['comment']}}</span><br/>@endif Example response ({{$response['status']}}):
 
+@if($response['content-type'] != 'application/json')
+```
+Header Content-Type: {{$response['content-type']}}
+```
+@else
 ```json
 @if(is_object($response['content']) || is_array($response['content']))
 {!! json_encode($response['content'], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) !!}
@@ -28,6 +33,7 @@
 {!! json_encode(json_decode($response['content']), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) !!}
 @endif
 ```
+@endif
 @endforeach
 @else
 > Example response:

@@ -8,6 +8,8 @@ use Mpociot\ApiDoc\Tools\ResponseStrategies\ResponseTagStrategy;
 use Mpociot\ApiDoc\Tools\ResponseStrategies\ResponseCallStrategy;
 use Mpociot\ApiDoc\Tools\ResponseStrategies\ResponseFileStrategy;
 use Mpociot\ApiDoc\Tools\ResponseStrategies\TransformerTagsStrategy;
+use Mpociot\ApiDoc\Tools\ResponseStrategies\ResponsePdfFileStrategy;
+
 
 class ResponseResolver
 {
@@ -19,6 +21,7 @@ class ResponseResolver
         TransformerTagsStrategy::class,
         ResponseFileStrategy::class,
         ResponseCallStrategy::class,
+        ResponsePdfFileStrategy::class,
     ];
 
     /**
@@ -50,7 +53,7 @@ class ResponseResolver
 
             if (! is_null($responses)) {
                 return array_map(function (Response $response) {
-                    return ['status' => $response->getStatusCode(), 'content' => $this->getResponseContent($response), 'comment' => $this->getResponseComment($response)];
+                    return ['status' => $response->getStatusCode(), 'content' => $this->getResponseContent($response), 'comment' => $this->getResponseComment($response), 'content-type' => $this->getResponseContentType($response),];
                 }, $responses);
             }
         }
@@ -78,6 +81,16 @@ class ResponseResolver
         return $response ? $response->getContent() : '';
     }
 
+    /**
+     * @param $response
+     *
+     * @return mixed
+     */
+    private function getResponseContentType($response)
+    {
+        return $response ? $response->headers->get('content-type') : '';
+    }
+  
     /**
      * @param $response
      *
