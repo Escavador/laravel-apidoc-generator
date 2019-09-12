@@ -131,7 +131,7 @@ class Generator
                 return $tag instanceof Tag && $tag->getName() === 'bodyParam';
             })
             ->mapWithKeys(function ($tag) {
-                preg_match('/(.+?)\s+(.+?)\s+(required\s+)?(.*)/', $tag->getContent(), $content);
+                preg_match('/(.+?)\s+(.+?)\s+(required\s+)?(.*)/s', $tag->getContent(), $content);
                 if (empty($content)) {
                     // this means only name and type were supplied
                     list($name, $type) = preg_split('/\s+/', $tag->getContent());
@@ -139,6 +139,7 @@ class Generator
                     $description = '';
                 } else {
                     list($_, $name, $type, $required, $description) = $content;
+                    $description = str_replace(["\n", "\r"], ' ', $description);
                     $description = trim($description);
                     if ($description == 'required' && empty(trim($required))) {
                         $required = $description;
