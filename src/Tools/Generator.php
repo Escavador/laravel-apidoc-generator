@@ -67,11 +67,20 @@ class Generator
             'query' => $queryParameters,
         ]);
 
+        $parts = explode('#@footer@#', $docBlock['long']);
+        if (count($parts) > 1) {
+            list($description, $footerDescription) = $parts;
+        } else {
+            $description = $parts[0];
+            $footerDescription = '';
+        }
+
         $parsedRoute = [
             'id' => md5($this->getUri($route).':'.implode($this->getMethods($route))),
             'group' => $routeGroup,
             'title' => $docBlock['short'],
-            'description' => $docBlock['long'],
+            'description' => $description,
+            'footerDescription' => $footerDescription,
             'methods' => $this->getMethods($route),
             'uri' => $this->getUri($route),
             'boundUri' => Utils::getFullUrl($route, $rulesToApply['bindings'] ?? ($rulesToApply['response_calls']['bindings'] ?? [])),
