@@ -19,7 +19,7 @@ $response = $client->{{ strtolower($route['methods'][0]) }}("{{ rtrim($baseUrl, 
 @if(!empty($route['cleanBodyParameters']))
     'json' => [
     @foreach($route['cleanBodyParameters'] as $parameter => $value)
-        "{{$parameter}}" => @if(!is_array($value))"{{$value}}"@else[{!! implode(', ', $value)!!}]@endif,
+        "{{$parameter}}" => @if(gettype($value)== "string")"{{$value}}"@elseif(is_array($value)){!! \Mpociot\ApiDoc\Tools\Generator::printArray($value) !!}@else{{$value}}@endif,
     @endforeach
     ],
 @endif

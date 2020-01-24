@@ -2,6 +2,7 @@
 
 namespace Mpociot\ApiDoc\Tools;
 
+use Escavador\Vespa\Models\DocumentDefinition;
 use Faker\Factory;
 use ReflectionClass;
 use ReflectionMethod;
@@ -461,38 +462,193 @@ class Generator
     private function castToType(string $value, string $type)
     {
         $casts = [
+            'int' => 'intval',
             'integer' => 'intval',
             'number' => 'floatval',
             'float' => 'floatval',
             'boolean' => 'boolval',
         ];
 
+        $type = str_replace(' ', '', $type);
+
         // First, we handle booleans. We can't use a regular cast,
         //because PHP considers string 'false' as true.
-        if ($value == 'false' && $type == 'boolean') {
+        if ($value == 'false' && $type == 'boolean')
+        {
             return false;
         }
 
-        if (isset($casts[$type])) {
+        if (isset($casts[$type]))
+        {
             return $casts[$type]($value);
         }
+        // In case of type be an array, converts the string in an array,
+        // preserving the type.
+        elseif (strrpos($type, '[]') > 0)
+        {
+            $type = substr($type, 0, strlen($type) - 2);
+            return $this->stringToArray($type, $value);
+        }
 
-        //In case of type be an array, converts the string in an array,
-        //preserving the type.
-        if (strpos(str_replace(' ', '', $type), '[]') > 0) {
-            $value = str_replace('[','', $value);
-            $value = str_replace(']','', $value);
-            $value = str_replace(', ',',', $value);
-            $value = explode(',', $value);
+        return "$value";
+    }
 
-            $type_item =  str_replace('[]', '',  str_replace(' ', '', $type));
-            foreach ($value as &$item) {
-                if (isset($casts[$type_item])) {
-                    $item =  $casts[$type_item]($item);
+    private static function isTypeArray($type) {
+        if (strrpos($type, '[]') > 0) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private function normalizeStringToArray($value) {
+        $value = str_replace(' => ', '=>', $value);
+        $value = str_replace(' [', '[', $value);
+        $value = str_replace('[ ', '[', $value);
+        $value = str_replace( ' \'', '\'', $value);
+        $value = str_replace( ' \"', '\"', $value);
+        $value = str_replace(', ', ',', $value);
+        $value = str_replace(' ,', ',', $value);
+        $value = str_replace(' ]', ']', $value);
+        $value = str_replace('] ', ']', $value);
+
+        return $value;
+    }
+
+    private function stringToArray(string $type, $value) {
+        $result = [];
+
+        $value = $this->normalizeStringToArray($value);
+        $type = str_replace(' ', '', $type);
+
+        if(Generator::isTypeArray($type))
+        {
+            $value = substr($value, 0, strlen($value) - 1);
+            $value = substr($value, 1, strlen($value));
+            $type = substr($type, 0, strlen($type) -2);
+
+            $pieces = explode('],', $value);
+            $index = 0;
+            foreach ($pieces as $piece)
+            {
+                // remove um [] do type
+                if(strpos($type, "[]") !== false)
+                {
+                    $type = substr($type, 0, strlen($type) -2);
                 }
+
+                // remove [
+                if ($index == 0 && $piece[0] = "[")
+                {
+                    $piece = substr($piece, 1, strlen($piece));
+                }
+                // remove ]
+                elseif ($index == count($pieces) - 1 && $piece[strlen($piece) - 1] = "]")
+                {
+                    $piece = substr($piece, 0, strlen($piece) -1);
+                }
+
+                $result[] = Generator::stringToArray($type, $piece);
+            }
+        }
+        else
+        {
+            $pieces = explode(',', $value);
+
+            foreach ($pieces as $index => $piece)
+            {
+                if($piece[0] == "[")
+                {
+                    $piece = substr($piece, 1, strlen($piece));
+                }
+                elseif($piece[strlen($piece) - 1] == "]")
+                {
+                    $piece = substr($piece, 0, strlen($piece) - 1);
+                }
+
+                if(strpos($piece, "=>") !== false)
+                {
+                    $keyValue = explode("=>", $piece);
+                    $key = $keyValue[0];
+                    $content = $keyValue[1];
+
+
+                    if ($key[0] == "'" && $key[strlen($key) - 1] == "'")
+                    {
+                        $key = substr($key, 1, strlen($key) - 2);
+                    }
+
+                    if ($content[0] == "'" && $content[strlen($content) - 1] == "'")
+                    {
+                        $content = substr($content, 1, strlen($content) - 2);
+                    }
+
+                    if ($content[strlen($content) - 1] == "]")
+                    {
+                        $content = substr($content, 0, strlen($content) - 1);
+                    }
+                }
+                else
+                {
+                    $key = $index;
+                    if ($piece[0] == "'" && $piece[strlen($piece) - 1] == "'")
+                    {
+                        $content = substr($piece, 1, strlen($piece) - 2);
+                    }
+                    else
+                    {
+                        $content = $piece;
+                    }
+                }
+
+                $result[$key] = $this->castToType($content, $type);
             }
         }
 
-        return $value;
+        return $result;
+    }
+
+    public static function printArray($array)
+    {
+        $result = "[";
+        $index = 0;
+
+        foreach ($array as $key => $item)
+        {
+            $type = gettype($item);
+            if ($type == 'array')
+            {
+                if (gettype($key) == 'integer')
+                {
+                    $result .= Generator::printArray($item);
+                } else
+                {
+                    $result .= "'$key' => ".Generator::printArray($item);
+                }
+            } else
+            {
+                if (!is_numeric($item))
+                {
+                    $item = "'$item'";
+                }
+
+                if (gettype($key) == 'integer')
+                {
+                    $result .= "$item";
+                } else
+                {
+                    $result .= "'$key' => $item";
+                }
+            }
+
+            if ($index < count($array) - 1)
+            {
+                $result .= ", ";
+            }
+
+            $index++;
+        }
+
+        return $result."]";
     }
 }
