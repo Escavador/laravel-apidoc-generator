@@ -84,7 +84,8 @@ They will be included in the generated documentation text and example requests.
 
 ![](body_params.png)
 
-Note: a random value will be used as the value of each parameter in the example requests. If you'd like to specify an example value, you can do so by adding `Example: your-example` to the end of your description. For instance:
+### Example parameters
+For each parameter in your request, this package will generate a random value to be used in the example requests. If you'd like to specify an example value, you can do so by adding `Example: your-example` to the end of your description. For instance:
 
 ```php
     /**
@@ -95,6 +96,19 @@ Note: a random value will be used as the value of each parameter in the example 
      * @bodyParam room_id string The id of the room.
      * @bodyParam forever boolean Whether to ban the user forever. Example: false
      */
+```
+
+You can also exclude a particular parameter from the generated examples (for all languages) by annotating it with `No-example`. For instance:
+```php
+       /**
+        * @queryParam location_id required The id of the location. Example: 1
+        * @queryParam user_id required The id of the user. No-example
+        * @queryParam page required The page number. Example: 4
+        */
+```
+Outputs: 
+```bash
+curl -X GET -G "https://example.com/api?location_id=1&page=4"
 ```
 
 Note: You can also add the `@queryParam` and `@bodyParam` annotations to a `\Illuminate\Foundation\Http\FormRequest` subclass instead, if you are using one in your controller method
