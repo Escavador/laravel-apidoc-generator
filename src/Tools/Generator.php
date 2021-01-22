@@ -58,9 +58,8 @@ class Generator
         $controller = new ReflectionClass($class);
         $method = $controller->getMethod($method);
 
-        list($routeGroupName, $routeGroupDescription) = $this->getRouteGroup($controller, $method);
-
         $docBlock = $this->parseDocBlock($method);
+        list($routeGroupName, $routeGroupDescription, $routeTitle) = $this->getRouteGroup($controller, $docBlock);
         $uriParameters = $this->getUriParameters($method, $docBlock['tags']);
         $bodyParameters = $this->getBodyParameters($method, $docBlock['tags']);
         $queryParameters = $this->getQueryParameters($method, $docBlock['tags']);
@@ -79,11 +78,11 @@ class Generator
         }
 
         $parsedRoute = [
-            'id' => md5($this->getUri($route).':'.implode($this->getMethods($route))),
+            'id' => md5($this->getUri($route) . ':' . implode($this->getMethods($route))),
             'groupName' => $routeGroupName,
             'groupDescription' => $routeGroupDescription,
-            'title' => $docBlock['short'],
-            'description' => $description,
+            'title' => $routeTitle ?: $docBlock['short'],
+            'description' => $description ?: $docBlock['long'],
             'footerDescription' => $footerDescription,
             'methods' => $this->getMethods($route),
             'uri' => $this->getUri($route),
@@ -96,7 +95,7 @@ class Generator
             'cleanQueryParameters' => $this->cleanParams($queryParameters),
             'authenticated' => $this->getAuthStatusFromDocBlock($docBlock['tags']),
             'response' => $content,
-            'showresponse' => ! empty($content),
+            'showresponse' => !empty($content),
         ];
         $parsedRoute['headers'] = $rulesToApply['headers'] ?? [];
 
@@ -355,24 +354,41 @@ class Generator
 
     /**
      * @param ReflectionClass $controller
-     * @param ReflectionMethod $method
+     * @param array $methodDocBlock
      *
-     * @return array The route group name and description
+     * @return array The route group name, the group description, ad the route title
      */
-    protected function getRouteGroup(ReflectionClass $controller, ReflectionMethod $method)
+    protected function getRouteGroup(ReflectionClass $controller, array $methodDocBlock)
     {
         // @group tag on the method overrides that on the controller
-        $docBlockComment = $method->getDocComment();
-        if ($docBlockComment) {
-            $phpdoc = new DocBlock($docBlockComment);
-            foreach ($phpdoc->getTags() as $tag) {
+        if (!empty($methodDocBlock['tags'])) {
+            foreach ($methodDocBlock['tags'] as $tag) {
                 if ($tag->getName() === 'group') {
-                    $routeGroup = trim($tag->getContent());
-                    $routeGroupParts = explode("\n", $tag->getContent());
+                    $routeGroupParts = explode("\n", trim($tag->getContent()));
                     $routeGroupName = array_shift($routeGroupParts);
-                    $routeGroupDescription = implode("\n", $routeGroupParts);
+                    $routeGroupDescription = trim(implode("\n", $routeGroupParts));
 
-                    return [$routeGroupName, $routeGroupDescription];
+                    // If the route has no title (aka "short"),
+                    // we'll assume the routeGroupDescription is actually the title
+                    // Something like this:
+                    // /**
+                    //   * Fetch cars. <-- This is route title.
+                    //   * @group Cars <-- This is group name.
+                    //   * APIs for cars. <-- This is group description (not required).
+                    //   **/
+                    // VS
+                    // /**
+                    //   * @group Cars <-- This is group name.
+                    //   * Fetch cars. <-- This is route title, NOT group description.
+                    //   **/
+
+                    // BTW, this is a spaghetti way of doing this.
+                    // It shall be refactored soon. Deus vult!💪
+                    if (empty($methodDocBlock['short'])) {
+                        return [$routeGroupName, '', $routeGroupDescription];
+                    }
+
+                    return [$routeGroupName, $routeGroupDescription, $methodDocBlock['short']];
                 }
             }
         }
@@ -382,16 +398,16 @@ class Generator
             $phpdoc = new DocBlock($docBlockComment);
             foreach ($phpdoc->getTags() as $tag) {
                 if ($tag->getName() === 'group') {
-                    $routeGroupParts = explode("\n", $tag->getContent());
+                    $routeGroupParts = explode("\n", trim($tag->getContent()));
                     $routeGroupName = array_shift($routeGroupParts);
                     $routeGroupDescription = implode("\n", $routeGroupParts);
 
-                    return [$routeGroupName, $routeGroupDescription];
+                    return [$routeGroupName, $routeGroupDescription, $methodDocBlock['short']];
                 }
             }
         }
 
-        return [$this->config->get(('default_group')), ''];
+        return [$this->config->get(('default_group')), '', $methodDocBlock['short']];
     }
 
     private function normalizeParameterType($type)
@@ -484,19 +500,16 @@ class Generator
 
         // First, we handle booleans. We can't use a regular cast,
         //because PHP considers string 'false' as true.
-        if ($value == 'false' && $type == 'boolean')
-        {
+        if ($value == 'false' && $type == 'boolean') {
             return false;
         }
 
-        if (isset($casts[$type]))
-        {
+        if (isset($casts[$type])) {
             return $casts[$type]($value);
         }
         // In case of type be an array, converts the string in an array,
         // preserving the type.
-        elseif (strrpos($type, '[]') > 0)
-        {
+        elseif (strrpos($type, '[]') > 0) {
             $type = substr($type, 0, strlen($type) - 2);
             return $this->stringToArray($type, $value);
         }
@@ -504,7 +517,8 @@ class Generator
         return "$value";
     }
 
-    private static function isTypeArray($type) {
+    private static function isTypeArray($type)
+    {
         if (strrpos($type, '[]') > 0) {
             return true;
         }
@@ -512,12 +526,13 @@ class Generator
         return false;
     }
 
-    private function normalizeStringToArray($value) {
+    private function normalizeStringToArray($value)
+    {
         $value = str_replace(' => ', '=>', $value);
         $value = str_replace(' [', '[', $value);
         $value = str_replace('[ ', '[', $value);
-        $value = str_replace( ' \'', '\'', $value);
-        $value = str_replace( ' \"', '\"', $value);
+        $value = str_replace(' \'', '\'', $value);
+        $value = str_replace(' \"', '\"', $value);
         $value = str_replace(', ', ',', $value);
         $value = str_replace(' ,', ',', $value);
         $value = str_replace(' ]', ']', $value);
@@ -526,88 +541,69 @@ class Generator
         return $value;
     }
 
-    private function stringToArray(string $type, $value) {
+    private function stringToArray(string $type, $value)
+    {
         $result = [];
 
         $value = $this->normalizeStringToArray($value);
         $type = str_replace(' ', '', $type);
 
-        if(Generator::isTypeArray($type))
-        {
+        if (Generator::isTypeArray($type)) {
             $value = substr($value, 0, strlen($value) - 1);
             $value = substr($value, 1, strlen($value));
-            $type = substr($type, 0, strlen($type) -2);
+            $type = substr($type, 0, strlen($type) - 2);
 
             $pieces = explode('],', $value);
             $index = 0;
-            foreach ($pieces as $piece)
-            {
+            foreach ($pieces as $piece) {
                 // remove um [] do type
-                if(strpos($type, "[]") !== false)
-                {
-                    $type = substr($type, 0, strlen($type) -2);
+                if (strpos($type, "[]") !== false) {
+                    $type = substr($type, 0, strlen($type) - 2);
                 }
 
                 // remove [
-                if ($index == 0 && $piece[0] = "[")
-                {
+                if ($index == 0 && $piece[0] = "[") {
                     $piece = substr($piece, 1, strlen($piece));
                 }
                 // remove ]
-                elseif ($index == count($pieces) - 1 && $piece[strlen($piece) - 1] = "]")
-                {
-                    $piece = substr($piece, 0, strlen($piece) -1);
+                elseif ($index == count($pieces) - 1 && $piece[strlen($piece) - 1] = "]") {
+                    $piece = substr($piece, 0, strlen($piece) - 1);
                 }
 
                 $result[] = Generator::stringToArray($type, $piece);
             }
-        }
-        else
-        {
+        } else {
             $pieces = explode(',', $value);
 
-            foreach ($pieces as $index => $piece)
-            {
-                if($piece[0] == "[")
-                {
+            foreach ($pieces as $index => $piece) {
+                if ($piece[0] == "[") {
                     $piece = substr($piece, 1, strlen($piece));
-                }
-                elseif($piece[strlen($piece) - 1] == "]")
-                {
+                } elseif ($piece[strlen($piece) - 1] == "]") {
                     $piece = substr($piece, 0, strlen($piece) - 1);
                 }
 
-                if(strpos($piece, "=>") !== false)
-                {
+                if (strpos($piece, "=>") !== false) {
                     $keyValue = explode("=>", $piece);
                     $key = $keyValue[0];
                     $content = $keyValue[1];
 
 
-                    if ($key[0] == "'" && $key[strlen($key) - 1] == "'")
-                    {
+                    if ($key[0] == "'" && $key[strlen($key) - 1] == "'") {
                         $key = substr($key, 1, strlen($key) - 2);
                     }
 
-                    if ($content[0] == "'" && $content[strlen($content) - 1] == "'")
-                    {
+                    if ($content[0] == "'" && $content[strlen($content) - 1] == "'") {
                         $content = substr($content, 1, strlen($content) - 2);
                     }
 
-                    if ($content[strlen($content) - 1] == "]")
-                    {
+                    if ($content[strlen($content) - 1] == "]") {
                         $content = substr($content, 0, strlen($content) - 1);
                     }
-                }
-                else
-                {
+                } else {
                     $key = $index;
-                    if ($piece[0] == "'" && $piece[strlen($piece) - 1] == "'")
-                    {
+                    if ($piece[0] == "'" && $piece[strlen($piece) - 1] == "'") {
                         $content = substr($piece, 1, strlen($piece) - 2);
-                    }
-                    else
-                    {
+                    } else {
                         $content = $piece;
                     }
                 }
@@ -624,42 +620,33 @@ class Generator
         $result = "[";
         $index = 0;
 
-        foreach ($array as $key => $item)
-        {
+        foreach ($array as $key => $item) {
             $type = gettype($item);
-            if ($type == 'array')
-            {
-                if (gettype($key) == 'integer')
-                {
+            if ($type == 'array') {
+                if (gettype($key) == 'integer') {
                     $result .= Generator::printArray($item);
-                } else
-                {
-                    $result .= "'$key' => ".Generator::printArray($item);
+                } else {
+                    $result .= "'$key' => " . Generator::printArray($item);
                 }
-            } else
-            {
-                if (!is_numeric($item))
-                {
+            } else {
+                if (!is_numeric($item)) {
                     $item = "'$item'";
                 }
 
-                if (gettype($key) == 'integer')
-                {
+                if (gettype($key) == 'integer') {
                     $result .= "$item";
-                } else
-                {
+                } else {
                     $result .= "'$key' => $item";
                 }
             }
 
-            if ($index < count($array) - 1)
-            {
+            if ($index < count($array) - 1) {
                 $result .= ", ";
             }
 
             $index++;
         }
 
-        return $result."]";
+        return $result . "]";
     }
 }
