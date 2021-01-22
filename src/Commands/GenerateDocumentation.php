@@ -82,10 +82,10 @@ class GenerateDocumentation extends Command
 
         $generator = new Generator($this->docConfig);
         $parsedRoutes = $this->processRoutes($generator, $routes);
-        $parsedRoutes = collect($parsedRoutes)->groupBy('group')
+        $parsedRoutes = collect($parsedRoutes)->groupBy('groupName')
             ->sortBy(static function ($group) {
                 /* @var $group Collection */
-                return $group->first()['group'];
+                return $group->first()['groupName'];
             }, SORT_NATURAL);
 
         $this->writeMarkdown($parsedRoutes);
@@ -271,7 +271,7 @@ class GenerateDocumentation extends Command
     }
 
     /**
-     * @param $route
+     * @param Route $route
      *
      * @return bool
      */
@@ -286,13 +286,13 @@ class GenerateDocumentation extends Command
     }
 
     /**
-     * @param $action
+     * @param array $action
      *
      * @throws ReflectionException
      *
      * @return bool
      */
-    private function isRouteVisibleForDocumentation($action)
+    private function isRouteVisibleForDocumentation(array $action)
     {
         list($class, $method) = Utils::getRouteActionUses($action);
         $reflection = new ReflectionClass($class);
@@ -307,7 +307,7 @@ class GenerateDocumentation extends Command
             $phpdoc = new DocBlock($comment);
 
             return collect($phpdoc->getTags())
-                ->filter(function ($tag) use ($action) {
+                ->filter(function ($tag) {
                     return $tag->getName() === 'hideFromAPIDocumentation';
                 })
                 ->isEmpty();
