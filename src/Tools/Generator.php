@@ -97,8 +97,22 @@ class Generator
             'authenticated' => $this->getAuthStatusFromDocBlock($docBlock['tags']),
             'response' => $content,
             'showresponse' => !empty($content),
+            'tags' => []
         ];
         $parsedRoute['headers'] = $rulesToApply['headers'] ?? [];
+
+        foreach ($docBlock['tags'] as $tag) {
+            if (!array_key_exists($tag->getName(), $parsedRoute['tags'])) {
+                $parsedRoute['tags'][$tag->getName()] = $tag->getContent();
+            } else {
+                // Converte para array
+                if (!is_array($parsedRoute['tags'][$tag->getName()])) {
+                    $parsedRoute['tags'][$tag->getName()] = [$parsedRoute['tags'][$tag->getName()]];
+                }
+
+                $parsedRoute['tags'][$tag->getName()][] = $tag->getContent();
+            }
+        }
 
         return $parsedRoute;
     }
