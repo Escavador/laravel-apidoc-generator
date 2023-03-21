@@ -130,8 +130,12 @@ class GenerateDocumentation extends Command
         });
 
         $sections = $this->docConfig->get('sections');
+
+        $apiVersions = $this->docConfig->get('api_versions');
+
         $frontmatter = view('apidoc::partials.frontmatter')
             ->with('settings', $settings)
+            ->with('apiVersions', $apiVersions)
             ->with('sections', $sections);
         /*
          * In case the target file already exists, we should check if the documentation was modified
