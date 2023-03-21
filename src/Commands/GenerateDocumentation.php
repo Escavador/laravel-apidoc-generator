@@ -26,6 +26,7 @@ class GenerateDocumentation extends Command
      */
     protected $signature = 'apidoc:generate
                             {--force : Force rewriting of existing routes}
+                            {--config= : Specifies the configuration file to be used}
     ';
 
     /**
@@ -64,7 +65,7 @@ class GenerateDocumentation extends Command
         // Also, the --verbose option is included with all Artisan commands.
         Flags::$shouldBeVerbose = $this->option('verbose');
 
-        $this->docConfig = new DocumentationConfig(config('apidoc'));
+        $this->docConfig = new DocumentationConfig($this->option('config') ?? 'apidoc');
         $this->baseUrl = $this->docConfig->get('base_url') ?? config('app.url');
 
         try {
