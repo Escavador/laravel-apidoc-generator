@@ -65,7 +65,8 @@ class GenerateDocumentation extends Command
         // Also, the --verbose option is included with all Artisan commands.
         Flags::$shouldBeVerbose = $this->option('verbose');
 
-        $this->docConfig = new DocumentationConfig($this->option('config') ?? 'apidoc');
+        $config = $this->option('config') ?? 'apidoc';
+        $this->docConfig = new DocumentationConfig(config($config));
         $this->baseUrl = $this->docConfig->get('base_url') ?? config('app.url');
 
         try {
