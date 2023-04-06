@@ -223,9 +223,17 @@ class GenerateDocumentation extends Command
         $this->info('Wrote HTML documentation to: '.$outputPath.'/index.html');
 
         if ($this->shouldGeneratePostmanCollection()) {
-            $this->info('Generating Postman collection');
+            if ($this->docConfig->get('postman.use_custom_collection')) {
+                $this->info('Importing Postman collection');
 
-            file_put_contents($outputPath.DIRECTORY_SEPARATOR.'collection.json', $this->generatePostmanCollection($parsedRoutes));
+                $customCollection = file_get_contents($this->docConfig->get('postman.custom_collection_path'));
+
+                file_put_contents($outputPath.DIRECTORY_SEPARATOR.'collection.json', $customCollection);
+            } else {
+                $this->info('Generating Postman collection');
+
+                file_put_contents($outputPath.DIRECTORY_SEPARATOR.'collection.json', $this->generatePostmanCollection($parsedRoutes));
+            }
         }
 
         if ($logo = $this->docConfig->get('logo')) {
