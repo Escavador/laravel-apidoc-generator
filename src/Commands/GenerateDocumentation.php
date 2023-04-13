@@ -26,6 +26,7 @@ class GenerateDocumentation extends Command
      */
     protected $signature = 'apidoc:generate
                             {--force : Force rewriting of existing routes}
+                            {--config= : Specifies the configuration file to be used}
     ';
 
     /**
@@ -64,7 +65,8 @@ class GenerateDocumentation extends Command
         // Also, the --verbose option is included with all Artisan commands.
         Flags::$shouldBeVerbose = $this->option('verbose');
 
-        $this->docConfig = new DocumentationConfig(config('apidoc'));
+        $config = $this->option('config') ?? 'apidoc';
+        $this->docConfig = new DocumentationConfig(config($config));
         $this->baseUrl = $this->docConfig->get('base_url') ?? config('app.url');
 
         try {
@@ -129,8 +131,12 @@ class GenerateDocumentation extends Command
         });
 
         $sections = $this->docConfig->get('sections');
+
+        $apiVersions = $this->docConfig->get('api_versions');
+
         $frontmatter = view('apidoc::partials.frontmatter')
             ->with('settings', $settings)
+            ->with('apiVersions', $apiVersions)
             ->with('sections', $sections);
         /*
          * In case the target file already exists, we should check if the documentation was modified
@@ -217,9 +223,17 @@ class GenerateDocumentation extends Command
         $this->info('Wrote HTML documentation to: '.$outputPath.'/index.html');
 
         if ($this->shouldGeneratePostmanCollection()) {
-            $this->info('Generating Postman collection');
+            if ($this->docConfig->get('postman.use_custom_collection')) {
+                $this->info('Importing Postman collection');
 
-            file_put_contents($outputPath.DIRECTORY_SEPARATOR.'collection.json', $this->generatePostmanCollection($parsedRoutes));
+                $customCollection = file_get_contents($this->docConfig->get('postman.custom_collection_path'));
+
+                file_put_contents($outputPath.DIRECTORY_SEPARATOR.'collection.json', $customCollection);
+            } else {
+                $this->info('Generating Postman collection');
+
+                file_put_contents($outputPath.DIRECTORY_SEPARATOR.'collection.json', $this->generatePostmanCollection($parsedRoutes));
+            }
         }
 
         if ($logo = $this->docConfig->get('logo')) {
