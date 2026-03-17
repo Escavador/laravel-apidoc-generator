@@ -103,11 +103,22 @@ class Writer
             ->with('showPostmanCollectionButton', $this->shouldGeneratePostmanCollection);
 
         $settings = ['languages' => $this->config->get('example_languages')];
+        $apiVersions = $this->config->get('api_versions', []);
+        if (! is_array($apiVersions)) {
+            $apiVersions = [];
+        }
+
+        $sections = $parsedRoutes->keys()->filter(function ($groupName) {
+            return is_string($groupName) && trim($groupName) !== '';
+        })->values()->all();
+
         // Generate Markdown for each route
         $parsedRouteOutput = $this->generateMarkdownOutputForEachRoute($parsedRoutes, $settings);
 
         $frontmatter = view('apidoc::partials.frontmatter')
-            ->with('settings', $settings);
+            ->with('settings', $settings)
+            ->with('apiVersions', $apiVersions)
+            ->with('sections', $sections);
 
         /*
          * If the target file already exists,
