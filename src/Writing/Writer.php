@@ -98,9 +98,23 @@ class Writer
         $targetFile = $this->sourceOutputPath . '/source/index.md';
         $compareFile = $this->sourceOutputPath . '/source/.compare.md';
 
+        $styles = $this->config->get('styles', []);
+        if (! is_array($styles)) {
+            $styles = [];
+        }
+
+        $scripts = $this->config->get('scripts', []);
+        if (! is_array($scripts)) {
+            $scripts = [];
+        }
+
+        $legacyOutputPath = $this->getLegacyOutputPath();
+
         $infoText = view('apidoc::partials.info')
-            ->with('outputPath', 'docs')
-            ->with('showPostmanCollectionButton', $this->shouldGeneratePostmanCollection);
+            ->with('outputPath', $legacyOutputPath)
+            ->with('showPostmanCollectionButton', $this->shouldGeneratePostmanCollection)
+            ->with('styles', $styles)
+            ->with('scripts', $scripts);
 
         $settings = ['languages' => $this->config->get('example_languages')];
         $apiVersions = $this->config->get('api_versions', []);
@@ -365,6 +379,26 @@ class Writer
             ? "\n" . file_get_contents($appendFile) : '';
 
         return $appendFileContents;
+    }
+
+    /**
+     * Return output path in legacy format expected by published custom views
+     * (eg `v1/docs` instead of `public/v1/docs`).
+     */
+    protected function getLegacyOutputPath(): string
+    {
+        $configuredOutput = (string) ($this->config->get('output') ?? 'docs');
+        $normalized = trim(str_replace('\\', '/', $configuredOutput), '/');
+
+        if ($normalized === '') {
+            return 'docs';
+        }
+
+        if (strpos($normalized, 'public/') === 0) {
+            $normalized = substr($normalized, strlen('public/'));
+        }
+
+        return $normalized !== '' ? $normalized : 'docs';
     }
 
     protected function copyAssetsFromSourceFolderToPublicFolder(): void
