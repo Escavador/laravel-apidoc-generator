@@ -56,7 +56,7 @@ class GenerateDocumentation extends Command
     {
         // Using a global static variable here, so fuck off if you don't like it.
         // Also, the --verbose option is included with all Artisan commands.
-        Flags::$shouldBeVerbose = $this->option('verbose');
+        Flags::$shouldBeVerbose = $this->getOutput()->isVerbose() || $this->getOutput()->isVeryVerbose() || $this->getOutput()->isDebug();
 
         $this->docConfig = new DocumentationConfig(config('apidoc'));
         $this->baseUrl = $this->docConfig->get('base_url') ?? config('app.url');
@@ -126,6 +126,10 @@ class GenerateDocumentation extends Command
                 $this->info(sprintf($messageFormat, 'Processed', $routeMethods, $routePath));
             } catch (\Exception $exception) {
                 $this->warn(sprintf($messageFormat, 'Skipping', $routeMethods, $routePath) . '- Exception ' . get_class($exception) . ' encountered : ' . $exception->getMessage());
+                if (Flags::$shouldBeVerbose) {
+                    $this->line('  at ' . $exception->getFile() . ':' . $exception->getLine());
+                    $this->line($exception->getTraceAsString());
+                }
             }
         }
 

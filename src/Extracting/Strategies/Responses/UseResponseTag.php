@@ -53,10 +53,14 @@ class UseResponseTag extends Strategy
         }
 
         $responses = array_map(function (Tag $responseTag) {
-            preg_match('/^(\d{3})?\s?([\s\S]*)$/', $responseTag->getContent(), $result);
+            $didMatch = preg_match('/^(\d{3})?\s?([\s\S]*)$/', (string) $responseTag->getContent(), $result);
 
-            $status = $result[1] ?: 200;
-            $content = $result[2] ?: '{}';
+            if (! $didMatch) {
+                return ['content' => '{}', 'status' => 200];
+            }
+
+            $status = $result[1] ?? 200;
+            $content = $result[2] ?? '{}';
 
             return ['content' => $content, 'status' => (int) $status];
         }, $responseTags);

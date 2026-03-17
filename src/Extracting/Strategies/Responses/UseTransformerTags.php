@@ -103,10 +103,15 @@ class UseTransformerTags extends Strategy
      */
     private function getStatusCodeAndTransformerClass($tag): array
     {
-        $content = $tag->getContent();
-        preg_match('/^(\d{3})?\s?([\s\S]*)$/', $content, $result);
-        $status = $result[1] ?: 200;
-        $transformerClass = $result[2];
+        $content = (string) $tag->getContent();
+        $didMatch = preg_match('/^(\d{3})?\s?([\s\S]*)$/', $content, $result);
+
+        if (! $didMatch) {
+            return [200, ''];
+        }
+
+        $status = $result[1] ?? 200;
+        $transformerClass = $result[2] ?? '';
 
         return [$status, $transformerClass];
     }

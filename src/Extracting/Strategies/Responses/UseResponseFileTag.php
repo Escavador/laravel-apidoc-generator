@@ -54,14 +54,19 @@ class UseResponseFileTag extends Strategy
         }
 
         $responses = array_map(function (Tag $responseFileTag) {
-            preg_match('/^(\d{3})?\s?([\S]*[\s]*?)(\{.*\})?$/', $responseFileTag->getContent(), $result);
-            $relativeFilePath = trim($result[2]);
+            $didMatch = preg_match('/^(\d{3})?\s?([\S]*[\s]*?)(\{.*\})?$/', (string) $responseFileTag->getContent(), $result);
+
+            if (! $didMatch) {
+                return ['content' => '{}', 'status' => 200];
+            }
+
+            $relativeFilePath = trim($result[2] ?? '');
             $filePath = storage_path($relativeFilePath);
             if (! file_exists($filePath)) {
                 throw new \Exception('@responseFile ' . $relativeFilePath . ' does not exist');
             }
-            $status = $result[1] ?: 200;
-            $content = $result[2] ? file_get_contents($filePath, true) : '{}';
+            $status = $result[1] ?? 200;
+            $content = ! empty($result[2]) ? file_get_contents($filePath, true) : '{}';
             $json = ! empty($result[3]) ? str_replace("'", '"', $result[3]) : '{}';
             $merged = array_merge(json_decode($content, true), json_decode($json, true));
 

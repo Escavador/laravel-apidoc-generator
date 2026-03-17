@@ -108,10 +108,15 @@ class UseApiResourceTags extends Strategy
      */
     private function getStatusCodeAndApiResourceClass($tag): array
     {
-        $content = $tag->getContent();
-        preg_match('/^(\d{3})?\s?([\s\S]*)$/', $content, $result);
-        $status = $result[1] ?: 0;
-        $apiResourceClass = $result[2];
+        $content = (string) $tag->getContent();
+        $didMatch = preg_match('/^(\d{3})?\s?([\s\S]*)$/', $content, $result);
+
+        if (! $didMatch) {
+            return [0, ''];
+        }
+
+        $status = $result[1] ?? 0;
+        $apiResourceClass = $result[2] ?? '';
 
         return [$status, $apiResourceClass];
     }
