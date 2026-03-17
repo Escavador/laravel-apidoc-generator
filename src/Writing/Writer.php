@@ -209,13 +209,67 @@ class Writer
     {
         $metadata = $route['metadata'] ?? [];
 
+        $route['id'] = $route['id'] ?? '';
+        $route['uri'] = $route['uri'] ?? '';
+        $route['boundUri'] = $route['boundUri'] ?? $route['uri'];
+        $route['methods'] = (isset($route['methods']) && is_array($route['methods']) && count($route['methods']))
+            ? array_values($route['methods'])
+            : ['GET'];
+
+        $route['headers'] = isset($route['headers']) && is_array($route['headers']) ? $route['headers'] : [];
+        $route['urlParameters'] = isset($route['urlParameters']) && is_array($route['urlParameters']) ? $route['urlParameters'] : [];
+        $route['queryParameters'] = isset($route['queryParameters']) && is_array($route['queryParameters']) ? $route['queryParameters'] : [];
+        $route['bodyParameters'] = isset($route['bodyParameters']) && is_array($route['bodyParameters']) ? $route['bodyParameters'] : [];
+        $route['cleanQueryParameters'] = isset($route['cleanQueryParameters']) && is_array($route['cleanQueryParameters']) ? $route['cleanQueryParameters'] : [];
+        $route['cleanBodyParameters'] = isset($route['cleanBodyParameters']) && is_array($route['cleanBodyParameters']) ? $route['cleanBodyParameters'] : [];
+        $route['tags'] = isset($route['tags']) && is_array($route['tags']) ? $route['tags'] : [];
+
         $route['title'] = $route['title'] ?? ($metadata['title'] ?? '');
         $route['description'] = $route['description'] ?? ($metadata['description'] ?? '');
         $route['authenticated'] = $route['authenticated'] ?? ($metadata['authenticated'] ?? false);
         $route['footerDescription'] = $route['footerDescription'] ?? ($metadata['groupDescription'] ?? '');
+        $route['showresponse'] = $route['showresponse'] ?? false;
 
         // Legacy templates may use `uriParameters` and `response` instead of newer keys.
         $route['uriParameters'] = $route['uriParameters'] ?? ($route['urlParameters'] ?? []);
+        $route['uriParameters'] = is_array($route['uriParameters']) ? $route['uriParameters'] : [];
+
+        foreach ($route['uriParameters'] as $name => $parameter) {
+            if (! is_array($parameter)) {
+                $parameter = [];
+            }
+
+            $route['uriParameters'][$name] = [
+                'type' => $parameter['type'] ?? 'string',
+                'description' => $parameter['description'] ?? '',
+                'required' => $parameter['required'] ?? false,
+            ];
+        }
+
+        foreach ($route['queryParameters'] as $name => $parameter) {
+            if (! is_array($parameter)) {
+                $parameter = [];
+            }
+
+            $route['queryParameters'][$name] = [
+                'description' => $parameter['description'] ?? '',
+                'required' => $parameter['required'] ?? false,
+                'value' => $parameter['value'] ?? null,
+            ];
+        }
+
+        foreach ($route['bodyParameters'] as $name => $parameter) {
+            if (! is_array($parameter)) {
+                $parameter = [];
+            }
+
+            $route['bodyParameters'][$name] = [
+                'type' => $parameter['type'] ?? 'string',
+                'description' => $parameter['description'] ?? '',
+                'required' => $parameter['required'] ?? false,
+                'value' => $parameter['value'] ?? null,
+            ];
+        }
 
         $responses = $route['response'] ?? ($route['responses'] ?? []);
         if (! is_array($responses)) {
