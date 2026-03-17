@@ -180,6 +180,8 @@ class Writer
     {
         $parsedRouteOutput = $parsedRoutes->map(function (Collection $routeGroup) use ($settings) {
             return $routeGroup->map(function (array $route) use ($settings) {
+                $route = $this->prepareRouteForView($route);
+
                 if (count($route['cleanBodyParameters']) && ! isset($route['headers']['Content-Type'])) {
                     // Set content type if the user forgot to set it
                     $route['headers']['Content-Type'] = 'application/json';
@@ -198,6 +200,25 @@ class Writer
         });
 
         return $parsedRouteOutput;
+    }
+
+    /**
+     * Normalize route keys for backward compatibility with legacy published views.
+     */
+    protected function prepareRouteForView(array $route): array
+    {
+        $metadata = $route['metadata'] ?? [];
+
+        $route['title'] = $route['title'] ?? ($metadata['title'] ?? '');
+        $route['description'] = $route['description'] ?? ($metadata['description'] ?? '');
+        $route['authenticated'] = $route['authenticated'] ?? ($metadata['authenticated'] ?? false);
+        $route['footerDescription'] = $route['footerDescription'] ?? ($metadata['groupDescription'] ?? '');
+
+        // Legacy templates may use `uriParameters` and `response` instead of newer keys.
+        $route['uriParameters'] = $route['uriParameters'] ?? ($route['urlParameters'] ?? []);
+        $route['response'] = $route['response'] ?? ($route['responses'] ?? []);
+
+        return $route;
     }
 
     protected function writePostmanCollection(Collection $parsedRoutes): void
