@@ -143,15 +143,19 @@ class UseApiResourceTags extends Strategy
      */
     protected function instantiateApiResourceModel(string $type)
     {
+        $type = ltrim($type, '\\');
+
         try {
-            // Try Eloquent model factory
+            if (function_exists('factory')) {
+                return factory($type)->make();
+            }
 
-            // Factories are usually defined without the leading \ in the class name,
-            // but the user might write it that way in a comment. Let's be safe.
-            $type = ltrim($type, '\\');
+            if (is_subclass_of($type, Model::class) && method_exists($type, 'factory')) {
+                return $type::factory()->make();
+            }
 
-            return factory($type)->make();
-        } catch (\Exception $e) {
+            throw new Exception("No factory method available for {$type}.");
+        } catch (\Throwable $e) {
             if (Flags::$shouldBeVerbose) {
                 echo "Eloquent model factory failed to instantiate {$type}; trying to fetch from database.\n";
             }
