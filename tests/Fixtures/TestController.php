@@ -157,7 +157,7 @@ class TestController extends Controller
      */
     public function withEloquentApiResource()
     {
-        return new TestUserApiResource(factory(TestUser::class)->make(['id' => 0]));
+        return new TestUserApiResource($this->makeTestUser());
     }
 
     /**
@@ -169,7 +169,7 @@ class TestController extends Controller
     public function withEloquentApiResourceCollection()
     {
         return TestUserApiResource::collection(
-            collect([factory(TestUser::class)->make(['id' => 0])])
+            collect([$this->makeTestUser()])
         );
     }
 
@@ -182,8 +182,19 @@ class TestController extends Controller
     public function withEloquentApiResourceCollectionClass()
     {
         return new TestUserApiResourceCollection(
-            collect([factory(TestUser::class)->make(['id' => 0])])
+            collect([$this->makeTestUser()])
         );
+    }
+
+    private function makeTestUser(): TestUser
+    {
+        $user = new TestUser();
+        $user->id = 0;
+        $user->first_name = 'Tested';
+        $user->last_name = 'Again';
+        $user->email = 'a@b.com';
+
+        return $user;
     }
 
     public function checkCustomHeaders(Request $request)

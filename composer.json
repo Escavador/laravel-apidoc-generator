@@ -22,14 +22,13 @@
         "illuminate/routing": "^10.0|^11.0|^12.0",
         "illuminate/support": "^10.0|^11.0|^12.0",
         "league/flysystem": "^3.0",
-        "mpociot/documentarian": "^0.6.0",
         "mpociot/reflection-docblock": "^1.0.1",
         "nunomaduro/collision": "^8.0",
+        "pronabsen/mpociot-documentarian": "^3.0",
         "ramsey/uuid": "^4.0",
         "symfony/var-exporter": "^6.0|^7.0"
     },
     "require-dev": {
-        "dms/phpunit-arraysubset-asserts": "^0.1.0",
         "laravel/lumen-framework": "^11.0|^12.0",
         "league/fractal": "^0.19.0",
         "orchestra/testbench": "^9.0|^10.0",

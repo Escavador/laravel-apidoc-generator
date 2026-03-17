@@ -4,12 +4,11 @@
 
 namespace Mpociot\ApiDoc\Tests\Unit;
 
-use DMS\PHPUnitExtensions\ArraySubset\ArraySubsetAsserts;
 use Illuminate\Support\Arr;
 use Mpociot\ApiDoc\ApiDocGeneratorServiceProvider;
 use Mpociot\ApiDoc\Extracting\Generator;
 use Mpociot\ApiDoc\Tests\Fixtures\TestController;
-use Mpociot\ApiDoc\Tests\Fixtures\TestUser;
+use Mpociot\ApiDoc\Tests\Support\ArraySubsetAsserts;
 use Mpociot\ApiDoc\Tools\DocumentationConfig;
 use Orchestra\Testbench\TestCase;
 
@@ -65,15 +64,6 @@ abstract class GeneratorTestCase extends TestCase
     {
         parent::setUp();
 
-        $factory = app(\Illuminate\Database\Eloquent\Factory::class);
-        $factory->define(TestUser::class, function () {
-            return [
-                'id' => 4,
-                'first_name' => 'Tested',
-                'last_name' => 'Again',
-                'email' => 'a@b.com',
-            ];
-        });
         $this->generator = new Generator(new DocumentationConfig($this->config));
     }
 

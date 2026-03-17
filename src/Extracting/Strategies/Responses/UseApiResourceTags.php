@@ -146,12 +146,12 @@ class UseApiResourceTags extends Strategy
         $type = ltrim($type, '\\');
 
         try {
-            if (function_exists('factory')) {
-                return factory($type)->make();
-            }
-
             if (is_subclass_of($type, Model::class) && method_exists($type, 'factory')) {
                 return $type::factory()->make();
+            }
+
+            if (function_exists('factory')) {
+                return factory($type)->make();
             }
 
             throw new Exception("No factory method available for {$type}.");

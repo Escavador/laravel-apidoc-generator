@@ -3,6 +3,7 @@
 namespace Mpociot\ApiDoc;
 
 use Illuminate\Support\Facades\Route;
+use Mpociot\ApiDoc\Http\Controller as ApiDocController;
 
 class ApiDoc
 {
@@ -16,11 +17,10 @@ class ApiDoc
     public static function routes($path = '/doc')
     {
         Route::prefix($path)
-            ->namespace('\Mpociot\ApiDoc\Http')
             ->middleware(static::middleware())
             ->group(function () {
-                Route::get('/', 'Controller@html')->name('apidoc');
-                Route::get('.json', 'Controller@json')->name('apidoc.json');
+                Route::get('/', [ApiDocController::class, 'html'])->name('apidoc');
+                Route::get('.json', [ApiDocController::class, 'json'])->name('apidoc.json');
             });
     }
 

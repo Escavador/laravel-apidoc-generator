@@ -2,7 +2,6 @@
 
 namespace Mpociot\ApiDoc\Tests;
 
-use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Route as RouteFacade;
 use Illuminate\Support\Str;
@@ -11,7 +10,6 @@ use Mpociot\ApiDoc\Tests\Fixtures\TestController;
 use Mpociot\ApiDoc\Tests\Fixtures\TestGroupController;
 use Mpociot\ApiDoc\Tests\Fixtures\TestPartialResourceController;
 use Mpociot\ApiDoc\Tests\Fixtures\TestResourceController;
-use Mpociot\ApiDoc\Tests\Fixtures\TestUser;
 use Mpociot\ApiDoc\Tools\Utils;
 use Orchestra\Testbench\TestCase;
 use ReflectionException;
@@ -19,21 +17,6 @@ use ReflectionException;
 class GenerateDocumentationTest extends TestCase
 {
     use TestHelpers;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $factory = app(\Illuminate\Database\Eloquent\Factory::class);
-        $factory->define(TestUser::class, function () {
-            return [
-                'id' => 4,
-                'first_name' => 'Tested',
-                'last_name' => 'Again',
-                'email' => 'a@b.com',
-            ];
-        });
-    }
 
     public function tearDown(): void
     {
