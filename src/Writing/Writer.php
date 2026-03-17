@@ -5,8 +5,12 @@ namespace Mpociot\ApiDoc\Writing;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
+use InvalidArgumentException;
+use Mni\FrontYAML\Parser;
 use Mpociot\ApiDoc\Tools\DocumentationConfig;
 use Mpociot\Documentarian\Documentarian;
+use ReflectionClass;
+use Windwalker\Renderer\BladeRenderer;
 
 class Writer
 {
@@ -297,7 +301,17 @@ class Writer
     {
         $this->output->info('Generating API HTML code');
 
-        $this->documentarian->generate($this->sourceOutputPath);
+        try {
+            $this->documentarian->generate($this->sourceOutputPath);
+        } catch (InvalidArgumentException $exception) {
+            // Compatibility fallback for newer windwalker/renderer versions.
+            if (strpos($exception->getMessage(), 'View [index] not found.') === false) {
+                throw $exception;
+            }
+
+            $this->output->warn('Detected renderer compatibility issue. Falling back to internal HTML renderer.');
+            $this->generateHtmlWithFallbackRenderer();
+        }
 
         // Move assets to public folder
         $this->copyAssetsFromSourceFolderToPublicFolder();
@@ -305,5 +319,47 @@ class Writer
         $this->moveOutputFromSourceFolderToTargetFolder();
 
         $this->output->info("Wrote HTML documentation to: {$this->outputPath}");
+    }
+
+    protected function generateHtmlWithFallbackRenderer(): void
+    {
+        $sourceDir = $this->sourceOutputPath . '/source';
+        $indexFile = $sourceDir . '/index.md';
+
+        if (! is_dir($sourceDir) || ! file_exists($indexFile)) {
+            return;
+        }
+
+        $parser = new Parser();
+        $document = $parser->parse(file_get_contents($indexFile));
+        $frontmatter = $document->getYAML();
+        $html = $document->getContent();
+
+        if (isset($frontmatter['includes'])) {
+            foreach ($frontmatter['includes'] as $include) {
+                $includeFile = $sourceDir . '/includes/_' . $include . '.md';
+                if (file_exists($includeFile)) {
+                    $includeDocument = $parser->parse(file_get_contents($includeFile));
+                    $html .= $includeDocument->getContent();
+                }
+            }
+        }
+
+        $documentarianClassPath = dirname((new ReflectionClass(Documentarian::class))->getFileName());
+        $renderer = new BladeRenderer([
+            'paths' => [$documentarianClassPath . '/../resources/views'],
+            'cache_path' => $sourceDir . '/_tmp',
+        ]);
+
+        $output = $renderer->render('index', [
+            'page' => $frontmatter,
+            'content' => $html,
+        ]);
+
+        file_put_contents($this->sourceOutputPath . '/index.html', $output);
+
+        // Match Documentarian::generate() side effects for static assets.
+        rcopy($sourceDir . '/assets/images/', $this->sourceOutputPath . '/images');
+        rcopy($sourceDir . '/assets/stylus/fonts/', $this->sourceOutputPath . '/css/fonts');
     }
 }
