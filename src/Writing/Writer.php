@@ -122,9 +122,10 @@ class Writer
             $apiVersions = [];
         }
 
-        $sections = $parsedRoutes->keys()->filter(function ($groupName) {
-            return is_string($groupName) && trim($groupName) !== '';
-        })->values()->all();
+        $sections = $this->config->get('sections', []);
+        if (! is_array($sections)) {
+            $sections = [];
+        }
 
         // Generate Markdown for each route
         $parsedRouteOutput = $this->generateMarkdownOutputForEachRoute($parsedRoutes, $settings);
@@ -259,65 +260,32 @@ class Writer
         $route['uriParameters'] = $route['uriParameters'] ?? ($route['urlParameters'] ?? []);
         $route['uriParameters'] = is_array($route['uriParameters']) ? $route['uriParameters'] : [];
 
-        foreach ($route['uriParameters'] as $name => $parameter) {
-            if (! is_array($parameter)) {
-                $parameter = [];
-            }
+        $responseSource = $route['response'] ?? ($route['responses'] ?? null);
+        if ($responseSource === null) {
+            $route['response'] = [];
+        } elseif (is_array($responseSource) && array_is_list($responseSource)) {
+            // Keep the list shape, adding only missing keys used by legacy templates.
+            $route['response'] = array_map(function ($response) {
+                if (! is_array($response)) {
+                    return [
+                        'status' => 200,
+                        'content' => $response,
+                        'comment' => '',
+                        'content-type' => 'application/json',
+                    ];
+                }
 
-            $route['uriParameters'][$name] = [
-                'type' => $parameter['type'] ?? 'string',
-                'description' => $parameter['description'] ?? '',
-                'required' => $parameter['required'] ?? false,
-            ];
-        }
-
-        foreach ($route['queryParameters'] as $name => $parameter) {
-            if (! is_array($parameter)) {
-                $parameter = [];
-            }
-
-            $route['queryParameters'][$name] = [
-                'description' => $parameter['description'] ?? '',
-                'required' => $parameter['required'] ?? false,
-                'value' => $parameter['value'] ?? null,
-            ];
-        }
-
-        foreach ($route['bodyParameters'] as $name => $parameter) {
-            if (! is_array($parameter)) {
-                $parameter = [];
-            }
-
-            $route['bodyParameters'][$name] = [
-                'type' => $parameter['type'] ?? 'string',
-                'description' => $parameter['description'] ?? '',
-                'required' => $parameter['required'] ?? false,
-                'value' => $parameter['value'] ?? null,
-            ];
-        }
-
-        $responses = $route['response'] ?? ($route['responses'] ?? []);
-        if (! is_array($responses)) {
-            $responses = [];
-        }
-
-        $route['response'] = array_map(function ($response) {
-            if (! is_array($response)) {
-                return [
+                return $response + [
                     'status' => 200,
-                    'content' => $response,
+                    'content' => null,
                     'comment' => '',
                     'content-type' => 'application/json',
                 ];
-            }
-
-            return [
-                'status' => $response['status'] ?? 200,
-                'content' => $response['content'] ?? null,
-                'comment' => $response['comment'] ?? '',
-                'content-type' => $response['content-type'] ?? 'application/json',
-            ];
-        }, $responses);
+            }, $responseSource);
+        } else {
+            // Preserve non-list/legacy response payloads to avoid changing old rendering behavior.
+            $route['response'] = $responseSource;
+        }
 
         return $route;
     }
