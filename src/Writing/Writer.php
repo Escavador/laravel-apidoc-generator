@@ -216,7 +216,29 @@ class Writer
 
         // Legacy templates may use `uriParameters` and `response` instead of newer keys.
         $route['uriParameters'] = $route['uriParameters'] ?? ($route['urlParameters'] ?? []);
-        $route['response'] = $route['response'] ?? ($route['responses'] ?? []);
+
+        $responses = $route['response'] ?? ($route['responses'] ?? []);
+        if (! is_array($responses)) {
+            $responses = [];
+        }
+
+        $route['response'] = array_map(function ($response) {
+            if (! is_array($response)) {
+                return [
+                    'status' => 200,
+                    'content' => $response,
+                    'comment' => '',
+                    'content-type' => 'application/json',
+                ];
+            }
+
+            return [
+                'status' => $response['status'] ?? 200,
+                'content' => $response['content'] ?? null,
+                'comment' => $response['comment'] ?? '',
+                'content-type' => $response['content-type'] ?? 'application/json',
+            ];
+        }, $responses);
 
         return $route;
     }
