@@ -1,0 +1,13 @@
+services:
+  php:
+    image: composer:2
+    working_dir: /app
+    volumes:
+      - ./:/app
+      - composer-cache:/tmp/composer-cache
+    environment:
+      COMPOSER_CACHE_DIR: /tmp/composer-cache
+    command: ["composer", "validate", "--strict"]
+
+volumes:
+  composer-cache:

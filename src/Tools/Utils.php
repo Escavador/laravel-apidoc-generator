@@ -3,8 +3,6 @@
 namespace Mpociot\ApiDoc\Tools;
 
 use Illuminate\Routing\Route;
-use League\Flysystem\Adapter\Local;
-use League\Flysystem\Filesystem;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\VarExporter\VarExporter;
@@ -90,9 +88,30 @@ class Utils
     public static function deleteDirectoryAndContents($dir)
     {
         $dir = ltrim($dir, '/');
-        $adapter = new Local(realpath(__DIR__ . '/../../'));
-        $fs = new Filesystem($adapter);
-        $fs->deleteDir($dir);
+        $basePath = realpath(__DIR__ . '/../../');
+        if (! $basePath) {
+            return;
+        }
+
+        $target = $basePath . DIRECTORY_SEPARATOR . $dir;
+        if (! is_dir($target)) {
+            return;
+        }
+
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($target, \FilesystemIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::CHILD_FIRST
+        );
+
+        foreach ($iterator as $fileInfo) {
+            if ($fileInfo->isDir()) {
+                @rmdir($fileInfo->getPathname());
+            } else {
+                @unlink($fileInfo->getPathname());
+            }
+        }
+
+        @rmdir($target);
     }
 
     /**

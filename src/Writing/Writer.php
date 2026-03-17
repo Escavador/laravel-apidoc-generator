@@ -5,8 +5,8 @@ namespace Mpociot\ApiDoc\Writing;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
+use League\CommonMark\CommonMarkConverter;
 use Mpociot\ApiDoc\Tools\DocumentationConfig;
-use Mpociot\Documentarian\Documentarian;
 
 class Writer
 {
@@ -36,11 +36,6 @@ class Writer
     private $shouldGeneratePostmanCollection = true;
 
     /**
-     * @var Documentarian
-     */
-    private $documentarian;
-
-    /**
      * @var bool
      */
     private $isStatic;
@@ -55,7 +50,7 @@ class Writer
      */
     private $outputPath;
 
-    public function __construct(Command $output, DocumentationConfig $config = null, bool $forceIt = false)
+    public function __construct(Command $output, ?DocumentationConfig $config = null, bool $forceIt = false)
     {
         // If no config is injected, pull from global
         $this->config = $config ?: new DocumentationConfig(config('apidoc'));
@@ -63,7 +58,6 @@ class Writer
         $this->forceIt = $forceIt;
         $this->output = $output;
         $this->shouldGeneratePostmanCollection = $this->config->get('postman.enabled', false);
-        $this->documentarian = new Documentarian();
         $this->isStatic = $this->config->get('type') === 'static';
         $this->sourceOutputPath = 'resources/docs';
         $this->outputPath = $this->isStatic ? ($this->config->get('output_folder') ?? 'public/docs') : 'resources/views/apidoc';
@@ -148,10 +142,7 @@ class Writer
 
         $this->output->info('Writing index.md and source files to: ' . $this->sourceOutputPath);
 
-        if (! is_dir($this->sourceOutputPath)) {
-            $documentarian = new Documentarian();
-            $documentarian->create($this->sourceOutputPath);
-        }
+        $this->ensureSourceDirectoriesExist();
 
         // Write output file
         file_put_contents($targetFile, $markdown);
@@ -260,22 +251,13 @@ class Writer
         $publicPath = $this->config->get('output_folder') ?? 'public/docs';
         if (! is_dir($publicPath)) {
             mkdir($publicPath, 0777, true);
-            mkdir("{$publicPath}/css");
-            mkdir("{$publicPath}/js");
-        }
-        copy("{$this->sourceOutputPath}/js/all.js", "{$publicPath}/js/all.js");
-        rcopy("{$this->sourceOutputPath}/images", "{$publicPath}/images");
-        rcopy("{$this->sourceOutputPath}/css", "{$publicPath}/css");
-
-        if ($logo = $this->config->get('logo')) {
-            copy($logo, "{$publicPath}/images/logo.png");
         }
     }
 
     protected function moveOutputFromSourceFolderToTargetFolder(): void
     {
         if ($this->isStatic) {
-            // Move output (index.html, css/style.css and js/all.js) to public/docs
+            // Move output (index.html) to public/docs
             rename("{$this->sourceOutputPath}/index.html", "{$this->outputPath}/index.html");
         } else {
             // Move output to resources/views
@@ -283,13 +265,6 @@ class Writer
                 mkdir($this->outputPath);
             }
             rename("{$this->sourceOutputPath}/index.html", "$this->outputPath/index.blade.php");
-            $contents = file_get_contents("$this->outputPath/index.blade.php");
-            //
-            $contents = str_replace('href="css/style.css"', 'href="{{ asset(\'/docs/css/style.css\') }}"', $contents);
-            $contents = str_replace('src="js/all.js"', 'src="{{ asset(\'/docs/js/all.js\') }}"', $contents);
-            $contents = str_replace('src="images/', 'src="/docs/images/', $contents);
-            $contents = preg_replace('#href="https?://.+?/docs/collection.json"#', 'href="{{ route("apidoc.json") }}"', $contents);
-            file_put_contents("$this->outputPath/index.blade.php", $contents);
         }
     }
 
@@ -297,7 +272,19 @@ class Writer
     {
         $this->output->info('Generating API HTML code');
 
-        $this->documentarian->generate($this->sourceOutputPath);
+        $markdownPath = "{$this->sourceOutputPath}/source/index.md";
+        if (! file_exists($markdownPath)) {
+            $this->output->error("Markdown source file not found at: {$markdownPath}");
+
+            return;
+        }
+
+        $markdown = file_get_contents($markdownPath) ?: '';
+        $converter = new CommonMarkConverter();
+        $html = (string) $converter->convert($markdown);
+        $wrapped = $this->wrapHtmlDocument($html);
+
+        file_put_contents("{$this->sourceOutputPath}/index.html", $wrapped);
 
         // Move assets to public folder
         $this->copyAssetsFromSourceFolderToPublicFolder();
@@ -305,5 +292,36 @@ class Writer
         $this->moveOutputFromSourceFolderToTargetFolder();
 
         $this->output->info("Wrote HTML documentation to: {$this->outputPath}");
+    }
+
+    private function ensureSourceDirectoriesExist(): void
+    {
+        $sourcePath = "{$this->sourceOutputPath}/source";
+        if (! is_dir($sourcePath)) {
+            mkdir($sourcePath, 0777, true);
+        }
+    }
+
+    private function wrapHtmlDocument(string $content): string
+    {
+        return '<!doctype html>'
+            . '<html lang="en">'
+            . '<head>'
+            . '<meta charset="utf-8">'
+            . '<meta name="viewport" content="width=device-width,initial-scale=1">'
+            . '<title>API Documentation</title>'
+            . '<style>'
+            . 'body{margin:0;padding:32px;background:#f7fafc;color:#1a202c;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;line-height:1.65}'
+            . '.container{max-width:980px;margin:0 auto;background:#fff;padding:28px;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 10px 25px rgba(26,32,44,.06)}'
+            . 'h1,h2,h3,h4{line-height:1.25;color:#111827}'
+            . 'code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}'
+            . 'pre{background:#0f172a;color:#e2e8f0;padding:14px;border-radius:10px;overflow:auto}'
+            . 'table{width:100%;border-collapse:collapse;margin:14px 0}'
+            . 'th,td{border:1px solid #e2e8f0;padding:8px;text-align:left}'
+            . '</style>'
+            . '</head>'
+            . '<body><main class="container">'
+            . $content
+            . '</main></body></html>';
     }
 }

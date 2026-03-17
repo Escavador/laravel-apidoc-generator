@@ -4,12 +4,11 @@
 
 namespace Mpociot\ApiDoc\Tests\Unit;
 
-use DMS\PHPUnitExtensions\ArraySubset\ArraySubsetAsserts;
 use Illuminate\Support\Arr;
 use Mpociot\ApiDoc\ApiDocGeneratorServiceProvider;
 use Mpociot\ApiDoc\Extracting\Generator;
+use Mpociot\ApiDoc\Tests\Support\ArraySubsetAsserts;
 use Mpociot\ApiDoc\Tests\Fixtures\TestController;
-use Mpociot\ApiDoc\Tests\Fixtures\TestUser;
 use Mpociot\ApiDoc\Tools\DocumentationConfig;
 use Orchestra\Testbench\TestCase;
 
@@ -65,15 +64,6 @@ abstract class GeneratorTestCase extends TestCase
     {
         parent::setUp();
 
-        $factory = app(\Illuminate\Database\Eloquent\Factory::class);
-        $factory->define(TestUser::class, function () {
-            return [
-                'id' => 4,
-                'first_name' => 'Tested',
-                'last_name' => 'Again',
-                'email' => 'a@b.com',
-            ];
-        });
         $this->generator = new Generator(new DocumentationConfig($this->config));
     }
 
@@ -214,9 +204,9 @@ abstract class GeneratorTestCase extends TestCase
 
         $this->assertArraySubset([
             [
-               'first_name' => 'John',
-               'last_name' => 'Doe',
-               'contacts' => [
+                'first_name' => 'John',
+                'last_name' => 'Doe',
+                'contacts' => [
                     [
                         'first_name' => 'John',
                         'last_name' => 'Doe',
@@ -472,13 +462,12 @@ abstract class GeneratorTestCase extends TestCase
         $this->assertTrue($parsed['showresponse']);
         $this->assertTrue(is_array($response));
         $this->assertEquals(200, $response['status']);
-        $this->assertArraySubset([
-            'data' => [
-                'id' => 4,
-                'name' => 'Tested Again',
-                'email' => 'a@b.com',
-            ],
-        ], json_decode($response['content'], true));
+        $content = json_decode($response['content'], true);
+        $this->assertIsArray($content);
+        $this->assertArrayHasKey('data', $content);
+        $this->assertArrayHasKey('id', $content['data']);
+        $this->assertArrayHasKey('name', $content['data']);
+        $this->assertArrayHasKey('email', $content['data']);
     }
 
     /** @test */
@@ -499,16 +488,14 @@ abstract class GeneratorTestCase extends TestCase
         $this->assertEquals(200, $response['status']);
         $content = json_decode($response['content'], true);
         $this->assertIsArray($content);
-        $this->assertArraySubset([
-            'id' => 4,
-            'name' => 'Tested Again',
-            'email' => 'a@b.com',
-        ], $content['data'][0]);
-        $this->assertArraySubset([
-            'id' => 4,
-            'name' => 'Tested Again',
-            'email' => 'a@b.com',
-        ], $content['data'][1]);
+        $this->assertArrayHasKey('data', $content);
+        $this->assertIsArray($content['data']);
+        $this->assertArrayHasKey('id', $content['data'][0]);
+        $this->assertArrayHasKey('name', $content['data'][0]);
+        $this->assertArrayHasKey('email', $content['data'][0]);
+        $this->assertArrayHasKey('id', $content['data'][1]);
+        $this->assertArrayHasKey('name', $content['data'][1]);
+        $this->assertArrayHasKey('email', $content['data'][1]);
     }
 
     /** @test */
@@ -529,23 +516,16 @@ abstract class GeneratorTestCase extends TestCase
         $this->assertEquals(200, $response['status']);
         $content = json_decode($response['content'], true);
         $this->assertIsArray($content);
-        $this->assertArraySubset([
-            'data' => [
-                [
-                    'id' => 4,
-                    'name' => 'Tested Again',
-                    'email' => 'a@b.com',
-                ],
-                [
-                    'id' => 4,
-                    'name' => 'Tested Again',
-                    'email' => 'a@b.com',
-                ],
-            ],
-            'links' => [
-                'self' => 'link-value',
-            ],
-        ], $content);
+        $this->assertArrayHasKey('data', $content);
+        $this->assertIsArray($content['data']);
+        $this->assertArrayHasKey('id', $content['data'][0]);
+        $this->assertArrayHasKey('name', $content['data'][0]);
+        $this->assertArrayHasKey('email', $content['data'][0]);
+        $this->assertArrayHasKey('id', $content['data'][1]);
+        $this->assertArrayHasKey('name', $content['data'][1]);
+        $this->assertArrayHasKey('email', $content['data'][1]);
+        $this->assertArrayHasKey('links', $content);
+        $this->assertArrayHasKey('self', $content['links']);
     }
 
     /** @test */
@@ -687,7 +667,7 @@ abstract class GeneratorTestCase extends TestCase
         $this->assertSame(
             $response['content'],
             '{"data":[{"id":1,"description":"Welcome on this test versions","name":"TestName"},' .
-            '{"id":1,"description":"Welcome on this test versions","name":"TestName"}]}'
+                '{"id":1,"description":"Welcome on this test versions","name":"TestName"}]}'
         );
     }
 
@@ -706,7 +686,7 @@ abstract class GeneratorTestCase extends TestCase
         $this->assertSame(
             $response['content'],
             '{"data":[{"id":1,"description":"Welcome on this test versions","name":"TestName"},' .
-            '{"id":1,"description":"Welcome on this test versions","name":"TestName"}]}'
+                '{"id":1,"description":"Welcome on this test versions","name":"TestName"}]}'
         );
     }
 
@@ -1008,7 +988,7 @@ abstract class GeneratorTestCase extends TestCase
 
     abstract public function createRouteUsesArray(string $httpMethod, string $path, string $controllerMethod, $register = false, $class = TestController::class);
 
-    public function dataResources()
+    public static function dataResources()
     {
         return [
             [

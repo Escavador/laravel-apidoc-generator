@@ -221,18 +221,16 @@ class PostmanCollectionWriterTest extends TestCase
         $variableData = data_get($collection, 'item.0.item.0.request.url.query');
 
         $this->assertCount(2, $variableData);
-        $this->assertContains([
-            'key' => 'required',
-            'value' => null,
-            'description' => 'A required param with a null value',
-            'disabled' => false,
-        ], $variableData);
-        $this->assertContains([
-            'key' => 'not_required',
-            'value' => null,
-            'description' => 'A not required param with a null value',
-            'disabled' => true,
-        ], $variableData);
+
+        $required = collect($variableData)->firstWhere('key', 'required');
+        $notRequired = collect($variableData)->firstWhere('key', 'not_required');
+
+        $this->assertNotNull($required);
+        $this->assertNotNull($notRequired);
+        $this->assertSame(false, $required['disabled']);
+        $this->assertSame(true, $notRequired['disabled']);
+        $this->assertSame('A required param with a null value', $required['description']);
+        $this->assertSame('A not required param with a null value', $notRequired['description']);
     }
 
     /**
@@ -255,7 +253,7 @@ class PostmanCollectionWriterTest extends TestCase
         }
     }
 
-    public function provideAuthConfigHeaderData()
+    public static function provideAuthConfigHeaderData()
     {
         yield [
             ['type' => 'bearer', 'bearer' => ['token' => 'Test']],

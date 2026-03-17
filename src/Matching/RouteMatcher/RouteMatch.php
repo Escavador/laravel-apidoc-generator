@@ -4,7 +4,7 @@ namespace Mpociot\ApiDoc\Matching\RouteMatcher;
 
 use Illuminate\Routing\Route;
 
-class Match implements \ArrayAccess
+class RouteMatch implements \ArrayAccess
 {
     /**
      * @var Route
@@ -17,8 +17,6 @@ class Match implements \ArrayAccess
     protected $rules;
 
     /**
-     * Match constructor.
-     *
      * @param Route $route
      * @param array $applyRules
      */
@@ -44,33 +42,21 @@ class Match implements \ArrayAccess
         return $this->rules;
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function offsetExists($offset)
     {
         return is_callable([$this, 'get' . ucfirst($offset)]);
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function offsetGet($offset)
     {
         return call_user_func([$this, 'get' . ucfirst($offset)]);
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function offsetSet($offset, $value)
     {
         return $this->$offset = $value;
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function offsetUnset($offset)
     {
         $this->$offset = null;

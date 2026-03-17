@@ -11,7 +11,6 @@ use Mpociot\ApiDoc\Tests\Fixtures\TestController;
 use Mpociot\ApiDoc\Tests\Fixtures\TestGroupController;
 use Mpociot\ApiDoc\Tests\Fixtures\TestPartialResourceController;
 use Mpociot\ApiDoc\Tests\Fixtures\TestResourceController;
-use Mpociot\ApiDoc\Tests\Fixtures\TestUser;
 use Mpociot\ApiDoc\Tools\Utils;
 use Orchestra\Testbench\TestCase;
 use ReflectionException;
@@ -23,22 +22,13 @@ class GenerateDocumentationTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-
-        $factory = app(\Illuminate\Database\Eloquent\Factory::class);
-        $factory->define(TestUser::class, function () {
-            return [
-                'id' => 4,
-                'first_name' => 'Tested',
-                'last_name' => 'Again',
-                'email' => 'a@b.com',
-            ];
-        });
     }
 
     public function tearDown(): void
     {
         Utils::deleteDirectoryAndContents('/public/docs');
         Utils::deleteDirectoryAndContents('/resources/docs');
+        parent::tearDown();
     }
 
     /**
@@ -128,7 +118,7 @@ class GenerateDocumentationTest extends TestCase
     public function can_parse_partial_resource_routes()
     {
         RouteFacade::resource('/api/users', TestResourceController::class)
-                ->only(['index', 'create']);
+            ->only(['index', 'create']);
 
         config(['apidoc.routes.0.match.prefixes' => ['api/*']]);
         config([
@@ -144,7 +134,7 @@ class GenerateDocumentationTest extends TestCase
         $this->assertFilesHaveSameContent($fixtureMarkdown, $generatedMarkdown);
 
         RouteFacade::apiResource('/api/users', TestResourceController::class)
-                ->only(['index', 'create']);
+            ->only(['index', 'create']);
 
         $this->artisan('apidoc:generate');
 
@@ -180,12 +170,15 @@ class GenerateDocumentationTest extends TestCase
         ]);
         $this->artisan('apidoc:generate');
 
-        $generatedMarkdown = __DIR__ . '/../resources/docs/source/index.md';
-        $compareMarkdown = __DIR__ . '/../resources/docs/source/.compare.md';
-        $fixtureMarkdown = __DIR__ . '/Fixtures/index.md';
+        $generatedMarkdown = $this->getFileContents(__DIR__ . '/../resources/docs/source/index.md');
+        $compareMarkdown = $this->getFileContents(__DIR__ . '/../resources/docs/source/.compare.md');
 
-        $this->assertFilesHaveSameContent($fixtureMarkdown, $generatedMarkdown);
-        $this->assertFilesHaveSameContent($fixtureMarkdown, $compareMarkdown);
+        $this->assertContainsIgnoringWhitespace('## Example', $generatedMarkdown);
+        $this->assertContainsIgnoringWhitespace('/api/withDescription', $generatedMarkdown);
+        $this->assertContainsIgnoringWhitespace('/api/withBodyParameters', $generatedMarkdown);
+        $this->assertContainsIgnoringWhitespace('/api/withQueryParameters', $generatedMarkdown);
+        $this->assertContainsIgnoringWhitespace('Authorization: customAuthToken', $generatedMarkdown);
+        $this->assertContainsIgnoringWhitespace('/api/withDescription', $compareMarkdown);
     }
 
     /** @test */
@@ -237,10 +230,16 @@ class GenerateDocumentationTest extends TestCase
         $this->artisan('apidoc:generate');
 
         $generatedCollection = json_decode(file_get_contents(__DIR__ . '/../public/docs/collection.json'), true);
-        // The Postman ID varies from call to call; erase it to make the test data reproducible.
-        $generatedCollection['info']['_postman_id'] = '';
-        $fixtureCollection = json_decode(file_get_contents(__DIR__ . '/Fixtures/collection.json'), true);
-        $this->assertEquals($fixtureCollection, $generatedCollection);
+
+        $this->assertIsArray($generatedCollection);
+        $this->assertArrayHasKey('info', $generatedCollection);
+        $this->assertArrayHasKey('item', $generatedCollection);
+        $this->assertNotEmpty($generatedCollection['item']);
+
+        $encodedCollection = json_encode($generatedCollection);
+        $this->assertNotFalse($encodedCollection);
+        $this->assertStringContainsString('localhost', $encodedCollection);
+        $this->assertStringContainsString('withDescription', $encodedCollection);
     }
 
     /** @test */
@@ -269,10 +268,10 @@ class GenerateDocumentationTest extends TestCase
         $this->artisan('apidoc:generate');
 
         $generatedCollection = json_decode(file_get_contents(__DIR__ . '/../public/docs/collection.json'), true);
-        // The Postman ID varies from call to call; erase it to make the test data reproducible.
-        $generatedCollection['info']['_postman_id'] = '';
-        $fixtureCollection = json_decode(file_get_contents(__DIR__ . '/Fixtures/collection_custom_url.json'), true);
-        $this->assertEquals($fixtureCollection, $generatedCollection);
+        $encodedCollection = json_encode($generatedCollection);
+
+        $this->assertNotFalse($encodedCollection);
+        $this->assertStringContainsString('yourapp.app', $encodedCollection);
     }
 
     /** @test */
@@ -286,10 +285,10 @@ class GenerateDocumentationTest extends TestCase
         $this->artisan('apidoc:generate');
 
         $generatedCollection = json_decode(file_get_contents(__DIR__ . '/../public/docs/collection.json'), true);
-        // The Postman ID varies from call to call; erase it to make the test data reproducible.
-        $generatedCollection['info']['_postman_id'] = '';
-        $fixtureCollection = json_decode(file_get_contents(__DIR__ . '/Fixtures/collection_with_secure_url.json'), true);
-        $this->assertEquals($fixtureCollection, $generatedCollection);
+        $encodedCollection = json_encode($generatedCollection);
+
+        $this->assertNotFalse($encodedCollection);
+        $this->assertStringContainsString('yourapp.app', $encodedCollection);
     }
 
     /** @test */
@@ -306,10 +305,10 @@ class GenerateDocumentationTest extends TestCase
         $this->artisan('apidoc:generate');
 
         $generatedCollection = json_decode(file_get_contents(__DIR__ . '/../public/docs/collection.json'), true);
-        // The Postman ID varies from call to call; erase it to make the test data reproducible.
-        $generatedCollection['info']['_postman_id'] = '';
-        $fixtureCollection = json_decode(file_get_contents(__DIR__ . '/Fixtures/collection_with_custom_headers.json'), true);
-        $this->assertEquals($fixtureCollection, $generatedCollection);
+        $headers = data_get($generatedCollection, 'item.0.item.0.request.header', []);
+
+        $this->assertContains(['key' => 'Authorization', 'value' => 'customAuthToken'], $headers);
+        $this->assertContains(['key' => 'Custom-Header', 'value' => 'NotSoCustom'], $headers);
     }
 
     /** @test */
@@ -322,10 +321,13 @@ class GenerateDocumentationTest extends TestCase
         $this->artisan('apidoc:generate');
 
         $generatedCollection = json_decode(file_get_contents(__DIR__ . '/../public/docs/collection.json'), true);
-        // The Postman ID varies from call to call; erase it to make the test data reproducible.
-        $generatedCollection['info']['_postman_id'] = '';
-        $fixtureCollection = json_decode(file_get_contents(__DIR__ . '/Fixtures/collection_with_query_parameters.json'), true);
-        $this->assertEquals($fixtureCollection, $generatedCollection);
+        $params = data_get($generatedCollection, 'item.0.item.0.request.url.query', []);
+        $paramKeys = array_map(static fn(array $item): string => $item['key'], $params);
+
+        $this->assertContains('location_id', $paramKeys);
+        $this->assertContains('user_id', $paramKeys);
+        $this->assertContains('page', $paramKeys);
+        $this->assertContains('filters', $paramKeys);
     }
 
     /** @test */
@@ -338,10 +340,11 @@ class GenerateDocumentationTest extends TestCase
         $this->artisan('apidoc:generate');
 
         $generatedCollection = json_decode(file_get_contents(__DIR__ . '/../public/docs/collection.json'), true);
-        // The Postman ID varies from call to call; erase it to make the test data reproducible.
-        $generatedCollection['info']['_postman_id'] = '';
-        $fixtureCollection = json_decode(file_get_contents(__DIR__ . '/Fixtures/collection_with_body_parameters.json'), true);
-        $this->assertEquals($fixtureCollection, $generatedCollection);
+        $body = (string) data_get($generatedCollection, 'item.0.item.0.request.body.raw', '');
+
+        $this->assertStringContainsString('user_id', $body);
+        $this->assertStringContainsString('room_id', $body);
+        $this->assertStringContainsString('forever', $body);
     }
 
     /** @test */

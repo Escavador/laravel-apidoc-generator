@@ -7,7 +7,7 @@ use Illuminate\Routing\Route;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\URL;
 use Mpociot\ApiDoc\Extracting\Generator;
-use Mpociot\ApiDoc\Matching\RouteMatcher\Match;
+use Mpociot\ApiDoc\Matching\RouteMatcher\RouteMatch;
 use Mpociot\ApiDoc\Matching\RouteMatcherInterface;
 use Mpociot\ApiDoc\Tools\DocumentationConfig;
 use Mpociot\ApiDoc\Tools\Flags;
@@ -84,7 +84,7 @@ class GenerateDocumentation extends Command
 
     /**
      * @param \Mpociot\ApiDoc\Extracting\Generator $generator
-     * @param Match[] $routes
+     * @param RouteMatch[] $routes
      *
      * @throws \ReflectionException
      *
@@ -137,7 +137,7 @@ class GenerateDocumentation extends Command
      *
      * @return bool
      */
-    private function isValidRoute(array $routeControllerAndMethod = null)
+    private function isValidRoute(?array $routeControllerAndMethod = null)
     {
         if (is_array($routeControllerAndMethod)) {
             $routeControllerAndMethod = implode('@', $routeControllerAndMethod);

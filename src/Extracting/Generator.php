@@ -17,7 +17,7 @@ class Generator
      */
     private $config;
 
-    public function __construct(DocumentationConfig $config = null)
+    public function __construct(?DocumentationConfig $config = null)
     {
         // If no config is injected, pull from global
         $this->config = $config ?: new DocumentationConfig(config('apidoc'));
@@ -239,6 +239,6 @@ class Generator
             $paramName = str_replace(['][', '[', ']', '..'], ['.', '.', '', '.*.'], $paramName);
         }
         // Then generate a sample item for the dot notation
-        Arr::set($values, str_replace(['.*', '*.'], ['.0','0.'], $paramName), $paramExample);
+        Arr::set($values, str_replace(['.*', '*.'], ['.0', '0.'], $paramName), $paramExample);
     }
 }

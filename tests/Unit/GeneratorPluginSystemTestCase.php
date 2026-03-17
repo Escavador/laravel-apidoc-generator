@@ -2,11 +2,11 @@
 
 namespace Mpociot\ApiDoc\Tests\Unit;
 
-use DMS\PHPUnitExtensions\ArraySubset\ArraySubsetAsserts;
 use Illuminate\Routing\Route;
 use Mpociot\ApiDoc\ApiDocGeneratorServiceProvider;
 use Mpociot\ApiDoc\Extracting\Generator;
 use Mpociot\ApiDoc\Extracting\Strategies\Strategy;
+use Mpociot\ApiDoc\Tests\Support\ArraySubsetAsserts;
 use Mpociot\ApiDoc\Tests\Fixtures\TestController;
 use Mpociot\ApiDoc\Tools\DocumentationConfig;
 use ReflectionClass;

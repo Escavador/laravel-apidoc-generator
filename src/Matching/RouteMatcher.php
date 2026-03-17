@@ -6,7 +6,7 @@ use Dingo\Api\Routing\RouteCollection;
 use Illuminate\Routing\Route;
 use Illuminate\Support\Facades\Route as RouteFacade;
 use Illuminate\Support\Str;
-use Mpociot\ApiDoc\Matching\RouteMatcher\Match;
+use Mpociot\ApiDoc\Matching\RouteMatcher\RouteMatch;
 
 class RouteMatcher implements RouteMatcherInterface
 {
@@ -36,7 +36,7 @@ class RouteMatcher implements RouteMatcherInterface
                 }
 
                 if ($this->shouldIncludeRoute($route, $routeRule, $includes, $usingDingoRouter)) {
-                    $matchedRoutes[] = new Match($route, $routeRule['apply'] ?? []);
+                    $matchedRoutes[] = new RouteMatch($route, $routeRule['apply'] ?? []);
                 }
             }
         }
@@ -67,8 +67,8 @@ class RouteMatcher implements RouteMatcherInterface
         return Str::is($mustIncludes, $route->getName())
             || Str::is($mustIncludes, $route->uri())
             || (Str::is($routeRule['match']['domains'] ?? [], $route->getDomain())
-            && Str::is($routeRule['match']['prefixes'] ?? [], $route->uri())
-            && $matchesVersion);
+                && Str::is($routeRule['match']['prefixes'] ?? [], $route->uri())
+                && $matchesVersion);
     }
 
     private function shouldExcludeRoute(Route $route, array $routeRule)

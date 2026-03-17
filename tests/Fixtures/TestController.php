@@ -157,7 +157,12 @@ class TestController extends Controller
      */
     public function withEloquentApiResource()
     {
-        return new TestUserApiResource(factory(TestUser::class)->make(['id' => 0]));
+        return new TestUserApiResource((new TestUser())->forceFill([
+            'id' => 4,
+            'first_name' => 'Tested',
+            'last_name' => 'Again',
+            'email' => 'a@b.com',
+        ]));
     }
 
     /**
@@ -169,7 +174,12 @@ class TestController extends Controller
     public function withEloquentApiResourceCollection()
     {
         return TestUserApiResource::collection(
-            collect([factory(TestUser::class)->make(['id' => 0])])
+            collect([(new TestUser())->forceFill([
+                'id' => 4,
+                'first_name' => 'Tested',
+                'last_name' => 'Again',
+                'email' => 'a@b.com',
+            ])])
         );
     }
 
@@ -182,7 +192,12 @@ class TestController extends Controller
     public function withEloquentApiResourceCollectionClass()
     {
         return new TestUserApiResourceCollection(
-            collect([factory(TestUser::class)->make(['id' => 0])])
+            collect([(new TestUser())->forceFill([
+                'id' => 4,
+                'first_name' => 'Tested',
+                'last_name' => 'Again',
+                'email' => 'a@b.com',
+            ])])
         );
     }
 
@@ -257,9 +272,7 @@ class TestController extends Controller
     /**
      * @hideFromAPIDocumentation
      */
-    public function skip()
-    {
-    }
+    public function skip() {}
 
     /**
      * @response {

@@ -52,7 +52,7 @@ class ResponseCalls extends Strategy
                 ],
             ];
         } catch (\Exception $e) {
-            echo 'Exception thrown during response call for [' . implode(',', $route->methods) . "] {$route->uri}.\n";
+            echo 'Exception thrown during response call for [' . implode(',', array_diff($route->methods(), ['HEAD'])) . "] {$route->uri()}.\n";
             if (Flags::$shouldBeVerbose) {
                 Utils::dumpException($e);
             } else {

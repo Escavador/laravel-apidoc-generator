@@ -90,7 +90,7 @@ class UseApiResourceTags extends Strategy
                 ],
             ];
         } catch (\Exception $e) {
-            echo 'Exception thrown when fetching Eloquent API resource response for [' . implode(',', $route->methods) . "] {$route->uri}.\n";
+            echo 'Exception thrown when fetching Eloquent API resource response for [' . implode(',', array_diff($route->methods(), ['HEAD'])) . "] {$route->uri()}.\n";
             if (Flags::$shouldBeVerbose) {
                 Utils::dumpException($e);
             } else {
@@ -144,13 +144,14 @@ class UseApiResourceTags extends Strategy
     protected function instantiateApiResourceModel(string $type)
     {
         try {
-            // Try Eloquent model factory
-
-            // Factories are usually defined without the leading \ in the class name,
-            // but the user might write it that way in a comment. Let's be safe.
+            // Try Eloquent model factory via HasFactory (Laravel 8+).
             $type = ltrim($type, '\\');
 
-            return factory($type)->make();
+            if (method_exists($type, 'factory')) {
+                return $type::factory()->make();
+            }
+
+            throw new \RuntimeException("No factory() method available for {$type}.");
         } catch (\Exception $e) {
             if (Flags::$shouldBeVerbose) {
                 echo "Eloquent model factory failed to instantiate {$type}; trying to fetch from database.\n";
