@@ -26,6 +26,7 @@ class GenerateDocumentation extends Command
      */
     protected $signature = 'apidoc:generate
                             {--force : Force rewriting of existing routes}
+                            {--config=apidoc : Config key to use (eg: apidoc, apidoc_v2)}
     ';
 
     /**
@@ -58,7 +59,16 @@ class GenerateDocumentation extends Command
         // Also, the --verbose option is included with all Artisan commands.
         Flags::$shouldBeVerbose = $this->getOutput()->isVerbose() || $this->getOutput()->isVeryVerbose() || $this->getOutput()->isDebug();
 
-        $this->docConfig = new DocumentationConfig(config('apidoc'));
+        $configName = (string) $this->option('config');
+        $configData = config($configName);
+
+        if (! is_array($configData)) {
+            $this->error("Configuration [{$configName}] was not found or is invalid.");
+
+            return 1;
+        }
+
+        $this->docConfig = new DocumentationConfig($configData);
         $this->baseUrl = $this->docConfig->get('base_url') ?? config('app.url');
 
         URL::forceRootUrl($this->baseUrl);
