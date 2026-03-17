@@ -7,7 +7,7 @@ use Illuminate\Routing\Route;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\URL;
 use Mpociot\ApiDoc\Extracting\Generator;
-use Mpociot\ApiDoc\Matching\RouteMatcher\Match;
+use Mpociot\ApiDoc\Matching\RouteMatcher\MatchedRoute;
 use Mpociot\ApiDoc\Matching\RouteMatcherInterface;
 use Mpociot\ApiDoc\Tools\DocumentationConfig;
 use Mpociot\ApiDoc\Tools\Flags;
@@ -84,7 +84,7 @@ class GenerateDocumentation extends Command
 
     /**
      * @param \Mpociot\ApiDoc\Extracting\Generator $generator
-     * @param Match[] $routes
+     * @param MatchedRoute[] $routes
      *
      * @throws \ReflectionException
      *
